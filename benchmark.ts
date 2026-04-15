@@ -1,9 +1,12 @@
 #!/usr/bin/env npx tsx
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
+
+const require = createRequire(import.meta.url);
 
 // ---------------------------------------------------------------------------
 // Constants (duplicated from index.ts so the benchmark is self-contained)
@@ -49,9 +52,30 @@ interface MetasearchResponse {
 // Helpers (duplicated from index.ts)
 // ---------------------------------------------------------------------------
 
+const PLATFORM_PACKAGES: Record<string, string> = {
+  "darwin-arm64": "@galelmalah/metasearch2-darwin-arm64",
+  "darwin-x64": "@galelmalah/metasearch2-darwin-x64",
+  "linux-x64": "@galelmalah/metasearch2-linux-x64",
+  "linux-arm64": "@galelmalah/metasearch2-linux-arm64",
+  "win32-x64": "@galelmalah/metasearch2-win32-x64",
+};
+
 function resolveBin(): string | undefined {
   const envBin = process.env.METASEARCH_BIN;
   if (envBin && fs.existsSync(envBin)) return envBin;
+
+  const platformKey = `${process.platform}-${process.arch}`;
+  const pkg = PLATFORM_PACKAGES[platformKey];
+  if (pkg) {
+    const binaryName = process.platform === "win32" ? "metasearch.exe" : "metasearch";
+    try {
+      const pkgDir = path.dirname(require.resolve(`${pkg}/package.json`));
+      const bundledBin = path.join(pkgDir, "bin", binaryName);
+      if (fs.existsSync(bundledBin)) return bundledBin;
+    } catch {
+      // package not installed
+    }
+  }
 
   const cargoHome =
     process.env.CARGO_HOME ?? path.join(process.env.HOME ?? "", ".cargo");

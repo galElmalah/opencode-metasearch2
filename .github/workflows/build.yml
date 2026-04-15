@@ -1,4 +1,4 @@
-name: Build & Publish Binaries
+name: Build & Publish
 
 on:
   schedule:
@@ -17,9 +17,6 @@ on:
           - minor
           - major
         default: patch
-
-permissions:
-  contents: write
 
 env:
   UPSTREAM_REPO: mat-1/metasearch2
@@ -59,7 +56,7 @@ jobs:
         id: version
         if: steps.check.outputs.needs_rebuild == 'true'
         run: |
-          CURRENT=$(node -p "require('./npm/darwin-arm64/package.json').version")
+          CURRENT=$(node -p "require('./package.json').version")
           BUMP="${{ inputs.version_bump || 'patch' }}"
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
@@ -136,6 +133,9 @@ jobs:
   publish:
     needs: [check-upstream, build]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -158,9 +158,11 @@ jobs:
             ls -lh npm/$pkg/bin/
           done
 
-      - name: Update platform package versions
+      - name: Update all package versions
         run: |
           VERSION="${{ needs.check-upstream.outputs.version }}"
+
+          # Update platform packages
           for pkg in npm/*/package.json; do
             node -e "
               const fs = require('fs');
@@ -170,24 +172,31 @@ jobs:
             "
           done
 
+          # Update main package version + pin optionalDependencies
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.version = '$VERSION';
+            for (const dep of Object.keys(p.optionalDependencies || {})) {
+              p.optionalDependencies[dep] = '$VERSION';
+            }
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+
       - name: Publish platform packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           for pkg in npm/*/; do
             echo "Publishing $(basename $pkg)..."
             cd "$pkg"
-            npm publish || echo "Failed to publish $(basename $pkg), continuing..."
+            npm publish --provenance --access public
             cd "$GITHUB_WORKSPACE"
           done
 
-      - name: Build and publish main plugin
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Build and publish main package
         run: |
           npm install
           npm run build
-          npm publish || echo "Main package publish failed"
+          npm publish --provenance --access public
 
       - name: Record upstream SHA
         run: echo "${{ needs.check-upstream.outputs.upstream_sha }}" > .upstream-sha
@@ -196,12 +205,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .upstream-sha npm/*/package.json
-          git commit -m "binaries v${{ needs.check-upstream.outputs.version }} — upstream ${{ needs.check-upstream.outputs.upstream_sha }}"
+          git add .upstream-sha package.json npm/*/package.json
+          git commit -m "v${{ needs.check-upstream.outputs.version }} — upstream ${{ needs.check-upstream.outputs.upstream_sha }}"
           git push
 
       - name: Create git tag
         run: |
-          VERSION="binaries-v${{ needs.check-upstream.outputs.version }}"
+          VERSION="v${{ needs.check-upstream.outputs.version }}"
           git tag "$VERSION"
           git push origin "$VERSION"

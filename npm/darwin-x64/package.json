@@ -1,6 +1,6 @@
 {
   "name": "@galelmalah/metasearch2-darwin-x64",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "metasearch2 binary for macOS x64 (Intel)",
   "os": ["darwin"],
   "cpu": ["x64"],
@@ -9,9 +9,10 @@
   "license": "CC0-1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/galElmalah/metasearch2-bin"
+    "url": "https://github.com/galElmalah/opencode-metasearch2"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

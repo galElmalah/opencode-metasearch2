@@ -1,6 +1,9 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
+
+const require = createRequire(import.meta.url);
 
 // ---------------------------------------------------------------------------
 // Types

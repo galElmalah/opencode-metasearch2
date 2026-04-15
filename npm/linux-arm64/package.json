@@ -1,6 +1,6 @@
 {
   "name": "@galelmalah/metasearch2-linux-arm64",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "metasearch2 binary for Linux ARM64",
   "os": ["linux"],
   "cpu": ["arm64"],
@@ -9,9 +9,10 @@
   "license": "CC0-1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/galElmalah/metasearch2-bin"
+    "url": "https://github.com/galElmalah/opencode-metasearch2"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
