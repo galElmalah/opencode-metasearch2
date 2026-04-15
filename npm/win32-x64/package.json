@@ -4,7 +4,8 @@
   "description": "metasearch2 binary for Windows x64",
   "os": ["win32"],
   "cpu": ["x64"],
-  "main": "bin/metasearch.exe",
+  "preferUnplugged": true,
+  "engines": { "node": ">=18" },
   "files": ["bin/metasearch.exe"],
   "license": "CC0-1.0",
   "repository": {

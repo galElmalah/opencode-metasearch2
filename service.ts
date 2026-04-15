@@ -1,6 +1,7 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
@@ -87,7 +88,7 @@ export class MetasearchService {
     this.configDir =
       options.configDir ??
       path.join(
-        process.env.XDG_CONFIG_HOME ?? path.join(process.env.HOME ?? '/tmp', '.config'),
+        process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config'),
         'metasearch',
       );
     this.url = `http://localhost:${this.port}`;
@@ -116,6 +117,8 @@ export class MetasearchService {
    *   4. `/tmp/metasearch2-build/bin/metasearch`
    */
   static resolveBin(): string | undefined {
+    const binaryName = process.platform === 'win32' ? 'metasearch.exe' : 'metasearch';
+
     // 1. Explicit env var
     const envBin = process.env.METASEARCH_BIN;
     if (envBin && fs.existsSync(envBin)) return envBin;
@@ -124,7 +127,6 @@ export class MetasearchService {
     const platformKey = `${process.platform}-${process.arch}`;
     const pkg = MetasearchService.PLATFORM_PACKAGES[platformKey];
     if (pkg) {
-      const binaryName = process.platform === 'win32' ? 'metasearch.exe' : 'metasearch';
       try {
         const pkgDir = path.dirname(require.resolve(`${pkg}/package.json`));
         const bundledBin = path.join(pkgDir, 'bin', binaryName);
@@ -135,12 +137,12 @@ export class MetasearchService {
     }
 
     // 3. Cargo install location
-    const cargoHome = process.env.CARGO_HOME ?? path.join(process.env.HOME ?? '', '.cargo');
-    const cargoBin = path.join(cargoHome, 'bin', 'metasearch');
+    const cargoHome = process.env.CARGO_HOME ?? path.join(os.homedir(), '.cargo');
+    const cargoBin = path.join(cargoHome, 'bin', binaryName);
     if (fs.existsSync(cargoBin)) return cargoBin;
 
     // 4. Common build location
-    const tmpBin = '/tmp/metasearch2-build/bin/metasearch';
+    const tmpBin = path.join(os.tmpdir(), 'metasearch2-build', 'bin', binaryName);
     if (fs.existsSync(tmpBin)) return tmpBin;
 
     return undefined;

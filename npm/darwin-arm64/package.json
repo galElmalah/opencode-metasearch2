@@ -4,7 +4,8 @@
   "description": "metasearch2 binary for macOS ARM64 (Apple Silicon)",
   "os": ["darwin"],
   "cpu": ["arm64"],
-  "main": "bin/metasearch",
+  "preferUnplugged": true,
+  "engines": { "node": ">=18" },
   "files": ["bin/metasearch"],
   "license": "CC0-1.0",
   "repository": {
