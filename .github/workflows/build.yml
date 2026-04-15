@@ -40,7 +40,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          UPSTREAM_SHA=$(gh api repos/${{ env.UPSTREAM_REPO }}/commits/main --jq .sha)
+          UPSTREAM_SHA=$(gh api repos/${{ env.UPSTREAM_REPO }}/commits/master --jq .sha)
           echo "upstream_sha=$UPSTREAM_SHA" >> "$GITHUB_OUTPUT"
 
           LAST_SHA=""
