@@ -1,0 +1,39 @@
+{
+  "name": "opencode-metasearch2",
+  "version": "0.1.0",
+  "description": "OpenCode plugin for web search powered by metasearch2",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "esbuild index.ts --bundle --format=esm --platform=node --outdir=dist --external:node:* --packages=bundle"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "search",
+    "metasearch",
+    "web-search"
+  ],
+  "license": "MIT",
+  "optionalDependencies": {
+    "@galelmalah/metasearch2-darwin-arm64": "*",
+    "@galelmalah/metasearch2-darwin-x64": "*",
+    "@galelmalah/metasearch2-linux-x64": "*",
+    "@galelmalah/metasearch2-linux-arm64": "*",
+    "@galelmalah/metasearch2-win32-x64": "*"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.2.24"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

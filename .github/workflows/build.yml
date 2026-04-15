@@ -1,0 +1,207 @@
+name: Build & Publish Binaries
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Weekly Monday 6am UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force rebuild even if upstream hasn't changed"
+        type: boolean
+        default: false
+      version_bump:
+        description: "Version bump type (patch/minor/major)"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+
+env:
+  UPSTREAM_REPO: mat-1/metasearch2
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    outputs:
+      needs_rebuild: ${{ steps.check.outputs.needs_rebuild }}
+      upstream_sha: ${{ steps.check.outputs.upstream_sha }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check upstream SHA
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          UPSTREAM_SHA=$(gh api repos/${{ env.UPSTREAM_REPO }}/commits/main --jq .sha)
+          echo "upstream_sha=$UPSTREAM_SHA" >> "$GITHUB_OUTPUT"
+
+          LAST_SHA=""
+          if [ -f .upstream-sha ]; then
+            LAST_SHA=$(cat .upstream-sha)
+          fi
+
+          if [ "${{ inputs.force }}" = "true" ] || [ "$UPSTREAM_SHA" != "$LAST_SHA" ]; then
+            echo "needs_rebuild=true" >> "$GITHUB_OUTPUT"
+            echo "Upstream changed: $LAST_SHA -> $UPSTREAM_SHA"
+          else
+            echo "needs_rebuild=false" >> "$GITHUB_OUTPUT"
+            echo "Upstream unchanged at $UPSTREAM_SHA"
+          fi
+
+      - name: Determine version
+        id: version
+        if: steps.check.outputs.needs_rebuild == 'true'
+        run: |
+          CURRENT=$(node -p "require('./npm/darwin-arm64/package.json').version")
+          BUMP="${{ inputs.version_bump || 'patch' }}"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "New version: $VERSION (was $CURRENT)"
+
+  build:
+    needs: check-upstream
+    if: needs.check-upstream.outputs.needs_rebuild == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-14
+            package: darwin-arm64
+            binary: metasearch
+          - target: x86_64-apple-darwin
+            os: macos-13
+            package: darwin-x64
+            binary: metasearch
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            package: linux-x64
+            binary: metasearch
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            package: linux-arm64
+            binary: metasearch
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            package: win32-x64
+            binary: metasearch.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout upstream metasearch2
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: main
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y cmake
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+        env:
+          CARGO_INCREMENTAL: "0"
+
+      - name: Strip binary (Unix)
+        if: runner.os != 'Windows'
+        run: strip target/${{ matrix.target }}/release/${{ matrix.binary }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.package }}
+          path: target/${{ matrix.target }}/release/${{ matrix.binary }}
+          retention-days: 1
+
+  publish:
+    needs: [check-upstream, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Place binaries in platform packages
+        run: |
+          for pkg in darwin-arm64 darwin-x64 linux-x64 linux-arm64 win32-x64; do
+            mkdir -p npm/$pkg/bin
+            cp artifacts/binary-$pkg/* npm/$pkg/bin/
+            chmod +x npm/$pkg/bin/* 2>/dev/null || true
+            ls -lh npm/$pkg/bin/
+          done
+
+      - name: Update platform package versions
+        run: |
+          VERSION="${{ needs.check-upstream.outputs.version }}"
+          for pkg in npm/*/package.json; do
+            node -e "
+              const fs = require('fs');
+              const p = JSON.parse(fs.readFileSync('$pkg', 'utf8'));
+              p.version = '$VERSION';
+              fs.writeFileSync('$pkg', JSON.stringify(p, null, 2) + '\n');
+            "
+          done
+
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for pkg in npm/*/; do
+            echo "Publishing $(basename $pkg)..."
+            cd "$pkg"
+            npm publish || echo "Failed to publish $(basename $pkg), continuing..."
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Build and publish main plugin
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm install
+          npm run build
+          npm publish || echo "Main package publish failed"
+
+      - name: Record upstream SHA
+        run: echo "${{ needs.check-upstream.outputs.upstream_sha }}" > .upstream-sha
+
+      - name: Commit version bump and SHA
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .upstream-sha npm/*/package.json
+          git commit -m "binaries v${{ needs.check-upstream.outputs.version }} — upstream ${{ needs.check-upstream.outputs.upstream_sha }}"
+          git push
+
+      - name: Create git tag
+        run: |
+          VERSION="binaries-v${{ needs.check-upstream.outputs.version }}"
+          git tag "$VERSION"
+          git push origin "$VERSION"
