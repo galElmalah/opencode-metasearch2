@@ -1,12 +1,20 @@
 {
   "name": "@galelmalah/metasearch2-linux-arm64",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "metasearch2 binary for Linux ARM64",
-  "os": ["linux"],
-  "cpu": ["arm64"],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
   "preferUnplugged": true,
-  "engines": { "node": ">=18" },
-  "files": ["bin/metasearch"],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/metasearch"
+  ],
   "license": "CC0-1.0",
   "repository": {
     "type": "git",
