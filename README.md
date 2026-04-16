@@ -82,6 +82,12 @@ All fields except `search_results` are optional -- they appear when metasearch2 
 
 The metasearch2 process is killed automatically when the session ends.
 
+## Fair use & blocking
+
+No API keys also means no official rate-limit contract. metasearch2 scrapes public search UIs, so heavy or bursty traffic can trigger CAPTCHAs or short IP-level rate-limits -- most aggressively from Google, less so from Bing and Brave. Blocks are typically transient (minutes to a few hours on a residential IP), and the aggregator falls back to other engines when one is unavailable.
+
+Be reasonable with it. This is free because it piggybacks on public search UIs -- don't point a thousand-agent swarm at it. If you need industrial throughput or guaranteed availability, use a paid search API.
+
 ## Configuration
 
 | Variable | Default | Description |
