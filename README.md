@@ -2,6 +2,8 @@
 
 [OpenCode](https://opencode.ai) plugin that adds a `web_search` tool powered by [metasearch2](https://github.com/mat-1/metasearch2) -- a fast meta-search engine that aggregates results from Google, Bing, Brave, and others. No API keys required.
 
+Want web search for your agent but don't want to pay for an API key? This is the plugin for you. It runs a local meta-search engine that scrapes results from multiple providers -- completely free, no accounts, no rate limits, no tokens to manage.
+
 ## Credits
 
 Built on [metasearch2](https://github.com/mat-1/metasearch2) by [mat-1](https://github.com/mat-1) -- an awesome open-source meta-search engine written in Rust. All the heavy lifting (search aggregation, ranking, deduplication) happens there.

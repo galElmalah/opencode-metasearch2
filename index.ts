@@ -7,9 +7,7 @@ const plugin: Plugin = async () => {
 
   try {
     await service.start();
-  } catch (err) {
-    console.error(`[metasearch2] ${err instanceof Error ? err.message : String(err)}`);
-    console.error('[metasearch2] web_search tool will be unavailable.');
+  } catch {
     return {};
   }
 

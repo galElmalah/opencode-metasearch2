@@ -141,49 +141,28 @@ export class MetasearchService {
    */
   private async installViaCargo(): Promise<string | undefined> {
     const cargoCheck = spawnSync('cargo', ['--version'], { stdio: 'ignore' });
-    if (cargoCheck.status !== 0) {
-      console.error(
-        '[metasearch2] cargo not found. Install Rust from https://rustup.rs\n' +
-          '  Or set METASEARCH_BIN to a pre-built binary path.',
-      );
-      return undefined;
-    }
-
-    console.error('[metasearch2] binary not found, running: cargo install metasearch');
-    console.error('[metasearch2] this compiles from source and may take a few minutes on first run...');
+    if (cargoCheck.status !== 0) return undefined;
 
     return new Promise<string | undefined>((resolve) => {
       const proc = spawn('cargo', ['install', 'metasearch'], {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
-      proc.stdout?.on('data', (data: Buffer) => {
-        console.error(`[metasearch2:cargo] ${data.toString().trim()}`);
-      });
-      proc.stderr?.on('data', (data: Buffer) => {
-        console.error(`[metasearch2:cargo] ${data.toString().trim()}`);
-      });
+      proc.stdout?.resume();
+      proc.stderr?.resume();
 
       const timeout = setTimeout(() => {
         proc.kill('SIGTERM');
-        console.error('[metasearch2] cargo install timed out after 5 minutes');
         resolve(undefined);
       }, CARGO_INSTALL_TIMEOUT_MS);
 
       proc.on('close', (code) => {
         clearTimeout(timeout);
-        if (code === 0) {
-          console.error('[metasearch2] cargo install succeeded');
-          resolve(MetasearchService.resolveBin());
-        } else {
-          console.error(`[metasearch2] cargo install failed (exit code ${code})`);
-          resolve(undefined);
-        }
+        resolve(code === 0 ? MetasearchService.resolveBin() : undefined);
       });
 
-      proc.on('error', (err) => {
+      proc.on('error', () => {
         clearTimeout(timeout);
-        console.error(`[metasearch2] cargo install error: ${err.message}`);
         resolve(undefined);
       });
     });
@@ -245,15 +224,8 @@ export class MetasearchService {
       detached: false,
     });
 
-    this.child.stdout?.on('data', (data: Buffer) => {
-      console.error(`[metasearch2] ${data.toString().trim()}`);
-    });
-    this.child.stderr?.on('data', (data: Buffer) => {
-      console.error(`[metasearch2] ${data.toString().trim()}`);
-    });
-    this.child.on('error', (err) => {
-      console.error(`[metasearch2] process error: ${err.message}`);
-    });
+    this.child.stdout?.resume();
+    this.child.stderr?.resume();
 
     const cleanup = () => this.stop();
     process.on('exit', cleanup);
@@ -262,7 +234,6 @@ export class MetasearchService {
     this.cleanupHandlers = [cleanup];
 
     await this.waitForReady();
-    console.error('[metasearch2] ready');
   }
 
   /** Kill the child process if it is still running and remove signal handlers. */
