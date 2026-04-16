@@ -11,7 +11,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "esbuild index.ts --bundle --format=esm --platform=node --outdir=dist --external:node:* --packages=bundle"
+    "build": "esbuild index.ts --bundle --format=esm --platform=node --outdir=dist --external:node:* --packages=bundle",
+    "test": "tsx --test test.ts"
   },
   "keywords": [
     "opencode",

@@ -1,18 +1,7 @@
 import type { Plugin } from '@opencode-ai/plugin';
 import { tool } from '@opencode-ai/plugin';
-import { MetasearchService } from './service.js';
+import { MetasearchService, type SearchType } from './service.js';
 
-/**
- * OpenCode plugin that provides a `web_search` tool powered by a local
- * metasearch2 instance.
- *
- * metasearch2 is a meta-search engine by mat-1 that aggregates results from
- * Google, Bing, Brave, and other search engines.
- * https://github.com/mat-1/metasearch2
- *
- * The plugin spawns the metasearch2 binary on init and kills it on exit.
- * If no binary is found, it attempts `cargo install metasearch` automatically.
- */
 const plugin: Plugin = async () => {
   const service = new MetasearchService();
 
@@ -28,12 +17,18 @@ const plugin: Plugin = async () => {
     tool: {
       web_search: tool({
         description:
-          'Search the web using a local metasearch engine. Returns results from multiple search engines (Google, Bing, Brave, etc.).',
+          'Search the web using a local metasearch engine that aggregates results from Google, Bing, Brave, and others. ' +
+          'Returns raw JSON with search results, featured snippets, direct answers, and infoboxes. ' +
+          'Set type to "images" for image search.',
         args: {
           query: tool.schema.string().describe('The search query'),
+          type: tool.schema
+            .enum(['all', 'images'])
+            .default('all')
+            .describe('Search type: "all" for web results, "images" for image search'),
         },
         async execute(args) {
-          return service.search(args.query);
+          return service.search(args.query, args.type as SearchType);
         },
       }),
     },

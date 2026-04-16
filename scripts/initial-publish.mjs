@@ -29,13 +29,22 @@ const PLATFORMS = [
   { dir: "win32-x64", binary: "metasearch.exe" },
 ];
 
-// Find local binary
-const LOCAL_BIN =
-  process.env.METASEARCH_BIN ||
-  "/tmp/metasearch2-build/bin/metasearch" ||
-  path.join(process.env.HOME ?? "", ".cargo", "bin", "metasearch");
+// Find local binary (first existing path wins)
+const LOCAL_BIN = (() => {
+  const candidates = [
+    process.env.METASEARCH_BIN,
+    "/tmp/metasearch2-build/bin/metasearch",
+    path.join(process.env.HOME ?? "", ".cargo", "bin", "metasearch"),
+  ];
+  return candidates.find((p) => p && fs.existsSync(p));
+})();
 
 const currentPlatform = `${process.platform}-${process.arch}`;
+
+if (!LOCAL_BIN) {
+  console.error("No metasearch binary found. Set METASEARCH_BIN or build first.");
+  process.exit(1);
+}
 
 console.log(`Current platform: ${currentPlatform}`);
 console.log(`Local binary: ${LOCAL_BIN}`);
@@ -135,7 +144,7 @@ try {
   failed++;
 }
 
-// Step 5: Restore provenance in package.json files
+// Step 4: Restore provenance in package.json files
 console.log("--- Restoring provenance ---\n");
 for (const pkgPath of modifiedPkgs) {
   const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
@@ -145,7 +154,7 @@ for (const pkgPath of modifiedPkgs) {
 }
 console.log(`  Restored provenance in ${modifiedPkgs.length} package(s)\n`);
 
-// Step 4: Clean up stubs (keep real binary)
+// Step 5: Clean up stubs (keep real binary)
 console.log("--- Cleanup ---\n");
 for (const stubPath of createdStubs) {
   fs.rmSync(stubPath);

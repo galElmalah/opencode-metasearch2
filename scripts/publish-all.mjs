@@ -38,7 +38,7 @@ for (const pkg of packages) {
   console.log(`  ${pkgJson.name}@${pkgJson.version}`);
 
   try {
-    const cmd = `npm publish${dryRun ? " --dry-run" : ""}`;
+    const cmd = `npm publish --access public${dryRun ? " --dry-run" : ""}`;
     execSync(cmd, { cwd: pkgDir, stdio: "inherit" });
     console.log(`  -> published\n`);
   } catch {

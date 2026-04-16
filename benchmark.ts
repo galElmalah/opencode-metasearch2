@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import { performance } from "node:perf_hooks";
-import { MetasearchService, type MetasearchResponse } from "./service.js";
+import { MetasearchService } from "./service.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -126,8 +126,8 @@ async function runBenchmark(numQueries?: number) {
     try {
       const text = await service.search(query);
       const elapsed = performance.now() - tq;
-      // Count results by counting numbered lines (e.g. "1. ", "2. ")
-      const count = (text.match(/^\d+\. /gm) || []).length;
+      const parsed = JSON.parse(text);
+      const count = parsed[0]?.search_results?.length ?? 0;
       latencies.push(elapsed);
       results.push({ query, latencyMs: elapsed, resultCount: count });
     } catch (err) {
