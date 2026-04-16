@@ -8,21 +8,15 @@ Built on [metasearch2](https://github.com/mat-1/metasearch2) by [mat-1](https://
 
 ## Quick start
 
-```sh
-npm install opencode-metasearch2
-```
-
 Add to your `opencode.json`:
 
 ```json
 {
-  "plugins": {
-    "metasearch": "opencode-metasearch2"
-  }
+  "plugin": ["opencode-metasearch2"]
 }
 ```
 
-That's it. The plugin ships with pre-built binaries for macOS, Linux, and Windows -- no Rust toolchain needed. On first run it spawns metasearch2 locally and exposes a `web_search` tool to your agent.
+That's it. OpenCode auto-installs the package at startup. The plugin ships with pre-built binaries for macOS, Linux, and Windows -- no Rust toolchain needed. On first run it spawns metasearch2 locally and exposes a `web_search` tool to your agent.
 
 ## Tool
 
