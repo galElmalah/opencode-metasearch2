@@ -59,7 +59,7 @@ async function runBenchmark(numQueries?: number) {
     console.error(
       "\nERROR: metasearch2 binary not found.\n" +
         "  Install with: npm install opencode-metasearch2\n" +
-        "  Or: cargo install metasearch\n" +
+        "  Or: cargo install --git https://github.com/Ron-RONZZ-org/metasearch2 metasearch\n" +
         "  Or set METASEARCH_BIN to the binary path.\n",
     );
     process.exit(1);

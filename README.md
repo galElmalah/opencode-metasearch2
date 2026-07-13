@@ -1,12 +1,15 @@
 # opencode-metasearch2
 
-[OpenCode](https://opencode.ai) plugin that adds a `web_search` tool powered by [metasearch2](https://github.com/mat-1/metasearch2) -- a fast meta-search engine that aggregates results from Google, Bing, Brave, and others. No API keys required.
+[OpenCode](https://opencode.ai) plugin that adds a `web_search` tool powered by a [patched fork of metasearch2](https://github.com/Ron-RONZZ-org/metasearch2) -- a fast meta-search engine that aggregates results from Google, Bing, Brave, and others. No API keys required.
 
 Want web search for your agent but don't want to pay for an API key? This is the plugin for you. It runs a local meta-search engine that scrapes results from multiple providers -- completely free, no accounts, no rate limits, no tokens to manage.
 
 ## Credits
 
-Built on [metasearch2](https://github.com/mat-1/metasearch2) by [mat-1](https://github.com/mat-1) -- an awesome open-source meta-search engine written in Rust. All the heavy lifting (search aggregation, ranking, deduplication) happens there.
+- [metasearch2](https://github.com/mat-1/metasearch2) by [mat-1](https://github.com/mat-1) -- the original awesome open-source meta-search engine in Rust
+- [Ron-RONZZ-org/metasearch2](https://github.com/Ron-RONZZ-org/metasearch2) -- patched fork with fixes
+
+All the heavy lifting (search aggregation, ranking, deduplication) happens in the Rust binary.
 
 ## Quick start
 
@@ -94,7 +97,7 @@ Be reasonable with it. This is free because it piggybacks on public search UIs -
 |---|---|---|
 | `METASEARCH_BIN` | *(auto-resolved)* | Path to the metasearch2 binary |
 | `METASEARCH_PORT` | `28019` | Port for the local HTTP API |
-| `METASEARCH_AUTO_INSTALL` | `true` | Set to `false` to skip auto `cargo install` |
+| `METASEARCH_AUTO_INSTALL` | `true` | Set to `false` to skip auto `cargo install` from the patched fork |
 | `XDG_CONFIG_HOME` | `~/.config` | Base directory for the config file |
 
 ### Advanced: engine configuration
@@ -130,7 +133,7 @@ The plugin checks for the binary in order:
 2. **Bundled platform package** (`@galelmalah/metasearch2-*`) -- installed automatically as an `optionalDependency`
 3. `$CARGO_HOME/bin/metasearch` (default: `~/.cargo/bin/metasearch`)
 4. `/tmp/metasearch2-build/bin/metasearch`
-5. **Auto-install**: runs `cargo install metasearch` if none of the above exist
+5. **Auto-install**: runs `cargo install --git https://github.com/Ron-RONZZ-org/metasearch2 metasearch` (from the patched fork) if none of the above exist
 
 ## Benchmark
 
@@ -144,7 +147,7 @@ Reports startup timing (binary resolution, config, spawn, health check) and per-
 ## Development
 
 ```sh
-git clone https://github.com/galElmalah/opencode-metasearch2.git
+git clone https://github.com/Ron-RONZZ-org/opencode-metasearch2.git
 cd opencode-metasearch2
 npm install
 npm run build

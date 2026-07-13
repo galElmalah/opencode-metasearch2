@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["index.ts", "service.ts", "benchmark.ts"]
+  "include": ["index.ts", "service.ts", "test.ts", "benchmark.ts"]
 }
